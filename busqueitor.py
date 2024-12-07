@@ -270,6 +270,9 @@ class DocumentValidator:
             raise
 
 def print_banner():
+    """
+    Muestra un banner en la terminal.
+    """
     banner = rf"""{Fore.CYAN}
     /\_/\  /\_/\  /\_/\  /\_/\  /\_/\  /\_/\  /\_/\  /\_/\  /\_/\  /\_/\\
    ( o.o )( o.o )( o.o )( o.o )( o.o )( o.o )( o.o )( o.o )( o.o )( o.o )
@@ -288,7 +291,7 @@ def print_banner():
 
 def mostrar_menu() -> int:
     """
-    Mostrar el menú principal y obtener la elección del usuario.
+    Muestra el menú principal y obtiene la elección del usuario.
 
     Returns:
         int: La opción de menú seleccionada.
@@ -310,8 +313,6 @@ def mostrar_menu() -> int:
         except ValueError:
             print(f"{Fore.RED}Error: Por favor ingrese un número válido{Style.RESET_ALL}")
 
-
-
 def sanitize_path(path: str) -> str:
     """
     Limpia la ruta del archivo eliminando caracteres no permitidos que puedan interferir con el análisis.
@@ -326,8 +327,8 @@ def sanitize_path(path: str) -> str:
     path = path.strip().strip('\'"')
 
     # Eliminar caracteres no deseados utilizando una expresión regular
-    # Permitimos letras, números, espacios y los símbolos / \ . _ - : ~
-    path = re.sub(r'[^\w\s/\\\.\_\-\:\~]', '', path)
+    # Permitimos letras, números, espacios y los símbolos / \ . _ - : ~ ( ) á é í ó ú Á É Í Ó Ú
+    path = re.sub(r'[^\w\s/\\\.\_\-\:\~\(\)áéíóúÁÉÍÓÚ]', '', path)
 
     # Expandir ruta de usuario (manejar '~' correctamente)
     path = os.path.expanduser(path)
@@ -381,6 +382,13 @@ def analizar_archivo(validador: DocumentValidator) -> List[Dict]:
     return resultados
 
 def exportar_resultados(validador: DocumentValidator, resultados: List[Dict]):
+    """
+    Exportar los resultados a un archivo CSV.
+
+    Args:
+        validador: Instancia de DocumentValidator.
+        resultados: Lista de documentos encontrados.
+    """
     nombre_archivo = input(f"\n{Fore.CYAN}Ingrese el nombre del archivo CSV (sin extensión):{Style.RESET_ALL} ").strip()
     output_file = f"{nombre_archivo}.csv"
     try:
@@ -415,16 +423,17 @@ def mostrar_ayuda():
                 print(f"\n{Fore.CYAN}Por favor, deje su feedback en el siguiente enlace:{Style.RESET_ALL}")
                 print(f"{Fore.YELLOW}https://github.com/DogSoulDev{Style.RESET_ALL}\n")
             elif opcion == 3:
-                
                 print(f"{Fore.MAGENTA}Gracias por utilizar {Fore.YELLOW}Busqueitor{Fore.MAGENTA}, hasta la proxima! {Style.RESET_ALL}")
                 exit()
             else:
                 print(f"{Fore.RED}Error: Por favor seleccione una opción válida (1-3){Style.RESET_ALL}")
         except ValueError:
-            print(f"{Fore.RED}Error: Por favor ingrese un número válido{Style.RESET_ALL}")        
+            print(f"{Fore.RED}Error: Por favor ingrese un número válido{Style.RESET_ALL}")
 
 def main():
-    """Función principal con menú interactivo para usar el validador de documentos."""
+    """
+    Función principal con menú interactivo para usar el validador de documentos.
+    """
     validador = DocumentValidator()
     url = None
     resultados = None
