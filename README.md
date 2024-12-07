@@ -1,3 +1,6 @@
+![image](https://github.com/user-attachments/assets/815cedaf-57c7-4425-b0b5-6e3711d1b745)
+
+
 # Instrucciones para Configurar y Usar el Proyecto
 
 ## Creación de un Entorno Virtual y Configuración del Proyecto
