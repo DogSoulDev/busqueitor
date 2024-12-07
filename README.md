@@ -1,9 +1,9 @@
 ![image](https://github.com/user-attachments/assets/815cedaf-57c7-4425-b0b5-6e3711d1b745)
 
 
-# Instrucciones para Configurar y Usar el Proyecto
+# Instrucciones para configurar y usar el Script.
 
-## Creación de un Entorno Virtual y Configuración del Proyecto
+## Creación de un entorno virtual y configuración del entorno.
 
 Un entorno virtual es un ambiente aislado que permite administrar las dependencias específicas de un proyecto Python sin interferir con los paquetes instalados globalmente o en otros entornos virtuales. Esto facilita el manejo de diferentes versiones de paquetes y evita conflictos entre proyectos.
 
