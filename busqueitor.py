@@ -128,6 +128,16 @@ class DocumentValidator:
         return bool(re.match(r'^[A-HJNP-SUVW]\d{7}[0-9A-Z]$', nif))
 
     def download_pdf(self, url: str, output_path: str) -> bool:
+        """
+        Descarga un archivo PDF desde una URL y lo guarda en la ruta especificada.
+
+        Args:
+            url (str): URL del archivo PDF.
+            output_path (str): Ruta de salida para guardar el archivo PDF.
+
+        Returns:
+            bool: True si la descarga fue exitosa, False si hubo un error.
+        """
         try:
             response = requests.get(url, timeout=30)
             response.raise_for_status()
@@ -135,42 +145,52 @@ class DocumentValidator:
                 f.write(response.content)
             return True
         except Exception as e:
-            logging.error(f"Error downloading PDF: {str(e)}")
+            logging.error(f"Error descargando el PDF: {str(e)}")
             return False
 
     def process_pdf(self, source: str, is_url: bool = False) -> List[Dict]:
+        """
+        Procesa un archivo PDF para extraer y validar documentos de identidad españoles.
+
+        Args:
+            source (str): Ruta del archivo PDF o URL del archivo PDF.
+            is_url (bool): Indica si la fuente es una URL.
+
+        Returns:
+            List[Dict]: Lista de resultados del análisis.
+        """
         temp_pdf = "temp_download.pdf" if is_url else source
         resultados = []
 
         try:
             if is_url:
-                print(f"{Fore.YELLOW}⌛ Downloading PDF...{Style.RESET_ALL}")
+                print(f"{Fore.YELLOW}⌛ Descargando PDF...{Style.RESET_ALL}")
                 if not self.download_pdf(source, temp_pdf):
-                    print(f"{Fore.RED}✗ Error downloading the PDF{Style.RESET_ALL}")
+                    print(f"{Fore.RED}✗ Error descargando el PDF{Style.RESET_ALL}")
                     return resultados
 
-            print(f"{Fore.YELLOW}⌛ Extracting text...{Style.RESET_ALL}")
+            print(f"{Fore.YELLOW}⌛ Extrayendo texto...{Style.RESET_ALL}")
             try:
                 with pdfplumber.open(temp_pdf) as pdf:
                     texto = ""
                     total_paginas = len(pdf.pages)
                     for i, pagina in enumerate(pdf.pages, 1):
-                        print(f"\rProcessing page {i}/{total_paginas}...", end="", flush=True)
+                        print(f"\rProcesando página {i}/{total_paginas}...", end="", flush=True)
                         texto += pagina.extract_text() or ""
-                    print(f"\n{Fore.GREEN}✓ Text extracted successfully{Style.RESET_ALL}")
+                    print(f"\n{Fore.GREEN}✓ Texto extraído con éxito{Style.RESET_ALL}")
 
             except Exception as e:
-                print(f"{Fore.YELLOW}⌛ Trying alternative method...{Style.RESET_ALL}")
+                print(f"{Fore.YELLOW}⌛ Intentando método alternativo...{Style.RESET_ALL}")
                 with open(temp_pdf, 'rb') as archivo:
                     reader = PdfFileReader(archivo)
                     texto = ""
                     total_paginas = len(reader.pages)
                     for i, pagina in enumerate(reader.pages, 1):
-                        print(f"\rProcessing page {i}/{total_paginas}...", end="", flush=True)
+                        print(f"\rProcesando página {i}/{total_paginas}...", end="", flush=True)
                         texto += pagina.extract_text() or ""
-                    print(f"\n{Fore.GREEN}✓ Text extracted successfully{Style.RESET_ALL}")
+                    print(f"\n{Fore.GREEN}✓ Texto extraído con éxito{Style.RESET_ALL}")
 
-            print(f"{Fore.YELLOW}⌛ Searching for documents...{Style.RESET_ALL}")
+            print(f"{Fore.YELLOW}⌛ Buscando documentos...{Style.RESET_ALL}")
             for patron, tipo in [
                 (self.PATRON_DNI, 'DNI'),
                 (self.PATRON_NIE, 'NIE'),
@@ -178,7 +198,7 @@ class DocumentValidator:
             ]:
                 coincidencias = list(re.finditer(patron, texto))
                 if coincidencias:
-                    print(f"{Fore.CYAN}Found {len(coincidencias)} {tipo}(s){Style.RESET_ALL}")
+                    print(f"{Fore.CYAN}Se encontraron {len(coincidencias)} {tipo}(s){Style.RESET_ALL}")
 
                 for match in coincidencias:
                     doc = match.group()
@@ -212,16 +232,16 @@ class DocumentValidator:
             return resultados
 
         except Exception as e:
-            print(f"{Fore.RED}Error processing PDF: {str(e)}{Style.RESET_ALL}")
+            print(f"{Fore.RED}Error procesando el PDF: {str(e)}{Style.RESET_ALL}")
             return resultados
 
         finally:
             if is_url and Path(temp_pdf).exists():
                 try:
                     Path(temp_pdf).unlink()
-                    print(f"{Fore.GREEN}✓ Temporary file deleted{Style.RESET_ALL}")
+                    print(f"{Fore.GREEN}✓ Archivo temporal eliminado{Style.RESET_ALL}")
                 except Exception as e:
-                    print(f"{Fore.RED}Error deleting temporary file: {str(e)}{Style.RESET_ALL}")
+                    print(f"{Fore.RED}Error eliminando el archivo temporal: {str(e)}{Style.RESET_ALL}")
 
     def save_results(self, resultados: List[Dict], archivo: str):
         """
@@ -299,7 +319,7 @@ def mostrar_menu() -> int:
     print_banner()
     print(f"{Fore.YELLOW}{'='*60}{Style.RESET_ALL}")
     print(f"{Fore.GREEN}1.{Style.RESET_ALL} Añadir URL de archivo PDF")
-    print(f"{Fore.GREEN}2.{Style.RESET_ALL} Subir o arrastrar y analizar archivo PDF desde el ordenador")
+    print(f"{Fore.GREEN}2.{Style.RESET_ALL} Subir o arrastrar y analizar uno o más archivos PDF desde el ordenador")
     print(f"{Fore.GREEN}3.{Style.RESET_ALL} Mostrar ayuda")
     print(f"{Fore.GREEN}4.{Style.RESET_ALL} Salir del script")
     print(f"{Fore.YELLOW}{'='*60}{Style.RESET_ALL}")
@@ -381,6 +401,46 @@ def analizar_archivo(validador: DocumentValidator) -> List[Dict]:
         print(f"{Fore.RED}No se encontraron documentos.{Style.RESET_ALL}")
     return resultados
 
+def analizar_multiples_archivos(validador: DocumentValidator) -> List[Dict]:
+    """
+    Analiza múltiples archivos PDF locales o arrastrados al terminal.
+
+    Args:
+        validador: Instancia de DocumentValidator para procesar los archivos
+
+    Returns:
+        List[Dict]: Lista de resultados del análisis
+    """
+    print(f"\n{Fore.CYAN}Arrastra y suelta los archivos PDF en el terminal o ingresa las rutas de los archivos separadas por comas:{Style.RESET_ALL} ")
+    input_str = input().strip()
+
+    # Usar shlex para dividir correctamente la entrada
+    tokens = shlex.split(input_str)
+    rutas_archivos = [sanitize_path(ruta) for ruta in tokens]
+    resultados_totales = []
+
+    for ruta_archivo in rutas_archivos:
+        if not Path(ruta_archivo).is_file():
+            print(f"{Fore.RED}Error: El archivo no existe o la ruta es incorrecta:{Style.RESET_ALL} {ruta_archivo}")
+            continue
+
+        ext = Path(ruta_archivo).suffix.lower()
+        if ext == '.pdf':
+            print(f"\n{Fore.YELLOW}⌛ Analizando documento PDF: {ruta_archivo}...{Style.RESET_ALL}")
+            resultados = validador.process_pdf(ruta_archivo)
+            if resultados:
+                print(f"\n{Fore.GREEN}✓ Se encontraron {len(resultados)} documentos en {ruta_archivo}:{Style.RESET_ALL}")
+                for doc in resultados:
+                    estado = f"{Fore.GREEN}✓{Style.RESET_ALL}" if doc['valido'] else f"{Fore.RED}⚠{Style.RESET_ALL}"
+                    print(f"{estado} {doc['tipo']}: {doc['documento']}")
+                resultados_totales.extend(resultados)
+            else:
+                print(f"{Fore.RED}No se encontraron documentos en {ruta_archivo}.{Style.RESET_ALL}")
+        else:
+            print(f"{Fore.RED}Error: Solo se admiten archivos PDF: {ruta_archivo}{Style.RESET_ALL}")
+
+    return resultados_totales
+
 def exportar_resultados(validador: DocumentValidator, resultados: List[Dict]):
     """
     Exportar los resultados a un archivo CSV.
@@ -409,6 +469,7 @@ def mostrar_ayuda():
     print(f"{Fore.GREEN}4.{Style.RESET_ALL} Mostrar ayuda: Muestra esta ayuda detallada.")
     print(f"{Fore.GREEN}5.{Style.RESET_ALL} Salir del script: Cierra el script.")
     print(f"{Fore.YELLOW}{'='*60}{Style.RESET_ALL}")
+    print(f"{Fore.RED}Recuerde eliminar cualquier espacio que tenga una vez arrastrados a la Shell sus documentos PDF, para que se puedan analizar correctamente.{Style.RESET_ALL}")
 
     while True:
         try:
@@ -436,7 +497,7 @@ def main():
     """
     validador = DocumentValidator()
     url = None
-    resultados = None
+    resultados = []
 
     while True:
         try:
@@ -463,8 +524,8 @@ def main():
                     print(f"{Fore.RED}No se encontraron documentos.{Style.RESET_ALL}")
 
             elif opcion == 2:
-                # Subir o arrastrar y analizar archivo PDF desde el ordenador
-                resultados = analizar_archivo(validador)
+                # Subir o arrastrar y analizar uno o más archivos PDF desde el ordenador
+                resultados = analizar_multiples_archivos(validador)
 
             elif opcion == 3:
                 # Mostrar ayuda
@@ -479,23 +540,32 @@ def main():
             while resultados:
                 print(f"\n{Fore.CYAN}¿Desea realizar otra acción?{Style.RESET_ALL}")
                 print(f"{Fore.GREEN}1.{Style.RESET_ALL} Volver al menú principal")
-                print(f"{Fore.GREEN}2.{Style.RESET_ALL} Exportar resultados a CSV")
-                print(f"{Fore.GREEN}3.{Style.RESET_ALL} Salir del script")
+                print(f"{Fore.GREEN}2.{Style.RESET_ALL} Exportar resultados a CSV (individualmente)")
+                print(f"{Fore.GREEN}3.{Style.RESET_ALL} Exportar todos los resultados a un solo CSV")
+                print(f"{Fore.GREEN}4.{Style.RESET_ALL} Mostrar ayuda de Busqueitor")
+                print(f"{Fore.GREEN}5.{Style.RESET_ALL} Salir del script")
                 try:
-                    sub_opcion = int(input(f"\n{Fore.CYAN}Seleccione una opción (1-3):{Style.RESET_ALL} "))
+                    sub_opcion = int(input(f"\n{Fore.CYAN}Seleccione una opción (1-5):{Style.RESET_ALL} "))
                     if sub_opcion == 1:
                         break
                     elif sub_opcion == 2:
-                        if not resultados:
-                            print(f"\n{Fore.RED}⚠ Error: No hay resultados para exportar{Style.RESET_ALL}")
-                            continue
-
-                        exportar_resultados(validador, resultados)
+                        for resultado in resultados:
+                            nombre_archivo = input(f"\n{Fore.CYAN}Ingrese el nombre del archivo CSV para {resultado['documento']} (sin extensión):{Style.RESET_ALL} ").strip()
+                            output_file = f"{nombre_archivo}.csv"
+                            validador.save_results([resultado], output_file)
+                            print(f"\n{Fore.GREEN}✓ Resultados guardados en {output_file}{Style.RESET_ALL}")
                     elif sub_opcion == 3:
+                        nombre_archivo = input(f"\n{Fore.CYAN}Ingrese el nombre del archivo CSV (sin extensión):{Style.RESET_ALL} ").strip()
+                        output_file = f"{nombre_archivo}.csv"
+                        validador.save_results(resultados, output_file)
+                        print(f"\n{Fore.GREEN}✓ Resultados guardados en {output_file}{Style.RESET_ALL}")
+                    elif sub_opcion == 4:
+                        mostrar_ayuda()
+                    elif sub_opcion == 5:
                         print(f"{Fore.MAGENTA}Gracias por utilizar {Fore.YELLOW}Busqueitor{Fore.MAGENTA}, hasta la proxima! {Style.RESET_ALL}")
                         return
                     else:
-                        print(f"{Fore.RED}Error: Por favor seleccione una opción válida (1-3){Style.RESET_ALL}")
+                        print(f"{Fore.RED}Error: Por favor seleccione una opción válida (1-5){Style.RESET_ALL}")
                 except ValueError:
                     print(f"{Fore.RED}Error: Por favor ingrese un número válido{Style.RESET_ALL}")
 
