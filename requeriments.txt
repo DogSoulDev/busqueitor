@@ -1,0 +1,4 @@
+requests
+pdfplumber
+PyPDF2
+colorama
